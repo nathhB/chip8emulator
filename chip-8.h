@@ -96,6 +96,7 @@ typedef enum Chip8_InstructionType
 } Chip8_InstructionType;
 
 void Chip8_Init(Chip8 *chip8);
+void Chip8_Reset(Chip8 *chip8);
 int Chip8_Load(Chip8 *chip8, uint8_t *data, unsigned int len);
 int Chip8_LoadFromFile(Chip8 *chip8, const char *path);
 int Chip8_GetNextInstruction(Chip8 *chip8, Chip8_InstructionType *instruction_type, uint16_t *instruction);

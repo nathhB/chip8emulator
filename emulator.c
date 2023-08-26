@@ -4,18 +4,62 @@
 
 #include "raylib.h"
 #include "chip-8.h"
+#include "rom_picker.h"
 
 #define GAME_WIDTH 640
 #define GAME_HEIGHT 320
 #define HUD_HEIGHT 30
 #define SCREEN_WIDTH GAME_WIDTH
 #define SCREEN_HEIGHT (GAME_HEIGHT + HUD_HEIGHT)
+#define ROM_PICKER_FONT_SIZE 20
 
+typedef enum EmulatorStateType
+{
+    STATE_ROM_SELECTION,
+    STATE_GAME
+} EmulatorStateType;
+
+typedef struct EmulatorState
+{
+    int (*init)(void *);
+    void (*deinit)(void);
+    void (*update)(void);
+} EmulatorState;
+
+typedef struct GameStateData
+{
+    Chip8 chip8;
+    void *pixels;
+    RenderTexture2D display_render_texture;
+    double last_time;
+    double time_acc;
+} GameStateData;
+
+typedef struct RomSelectionData
+{
+    RomPicker picker;
+} RomSelectionData;
+
+static int ChangeState(EmulatorStateType new_state_type, void *data);
 static void DrawGameScreen(RenderTexture2D display_render_texture);
 static void DrawHUD(void);
 static void UpdateScreen(Chip8 *chip8, RenderTexture2D display_render_texture, void *pixels);
 static void UpdateKeys(void);
 static uint16_t GetKeys(void);
+static int InitGameState(void *data);
+static void DeinitGameState(void);
+static void UpdateGameState(void);
+static int InitRomSelectionState(void *data);
+static void DeinitRomSelectionState(void);
+static void UpdateRomSelectionState(void);
+
+static EmulatorState states[2] = {
+    (EmulatorState){InitRomSelectionState, DeinitRomSelectionState, UpdateRomSelectionState},
+    (EmulatorState){InitGameState, DeinitGameState, UpdateGameState},
+};
+
+static RomSelectionData rom_selection_data;
+static GameStateData game_state_data;
 
 // key mappings from 0 to 0xF (16 keys)
 static int key_mappings[16] = {
@@ -38,79 +82,184 @@ static int key_mappings[16] = {
 };
 
 static uint16_t keys = 0;
+static EmulatorState *current_state = NULL;
+static bool rom_picker_enabled = false;
 
 int main(int argc, char **argv)
 {
-    if (argc != 2)
-    {
-        printf("Usage: disassembler ROM_PATH\n");
-        return 1;
-    }
-
-    const char *rom_path = argv[1];
-    Chip8 chip8;
-
-    Chip8_Init(&chip8);
-    Chip8_SetGetKeysCallback(&chip8, GetKeys);
-
-    if (Chip8_LoadFromFile(&chip8, rom_path) < 0)
-    {
-        printf("Failed to load ROM (path: %s)\n", rom_path);
-        return 1;
-    }
-
-    printf("ROM loaded (program length: %d)\n", chip8.program_len);
-
-    void *pixels = malloc(sizeof(Color) * DISPLAY_WIDTH * DISPLAY_HEIGHT);
-    memset(pixels, 0, sizeof(Color) * DISPLAY_WIDTH * DISPLAY_HEIGHT);
-
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Chip-8 Emulator");
 
-    RenderTexture2D display_render_texture = LoadRenderTexture(DISPLAY_WIDTH, DISPLAY_HEIGHT);
+    if (argc == 1)
+    {
+        RomPicker_Init(&rom_selection_data.picker, ROMS_DIR_PATH);
 
-    double last_time = 0;
-    double time_acc = 0;
-    int exit = 0;
+        rom_picker_enabled = true;
+
+        if (ChangeState(STATE_ROM_SELECTION, NULL) < 0)
+        {
+            goto error;
+        }
+    }
+    else if (argc == 2)
+    {
+        if (ChangeState(STATE_GAME, argv[1]) < 0)
+        {
+            goto error;
+        }
+    }
+    else
+    {
+        printf("Usage: emulator [ROM_PATH]\n");
+        goto error;
+    }
 
     while (!WindowShouldClose())
     {
-        double dt_secs = GetTime() - last_time;
-        last_time = GetTime();
-        time_acc += dt_secs;
-
-        while (time_acc >= CPU_TICK_SECS)
-        {
-            if (!Chip8_Tick(&chip8))
-            {
-                exit = 1;
-                break;
-            }
-
-            time_acc -= CPU_TICK_SECS;
-        }
-
-        if (exit) break;
-
-        if (chip8.st)
-        {
-            // TODO: play sound
-        }
-
-        UpdateScreen(&chip8, display_render_texture, pixels); 
-        UpdateKeys();
-
-        BeginDrawing();
-        ClearBackground(RAYWHITE);
-        DrawGameScreen(display_render_texture); 
-        DrawHUD();
-        EndDrawing();
+        current_state->update();
     }
 
+    current_state->deinit();
     CloseWindow();
-    UnloadRenderTexture(display_render_texture);
-    free(pixels);
+    return 0;
+
+error:
+    CloseWindow();
+    return 1; 
+}
+
+static int ChangeState(EmulatorStateType new_state_type, void *data)
+{
+    if (current_state) current_state->deinit();
+
+    current_state = &states[new_state_type];
+    return current_state->init(data);
+}
+
+static int InitGameState(void *data)
+{
+    char *rom_path = data;
+
+    memset(&game_state_data, 0, sizeof(GameStateData));
+    game_state_data.last_time = GetTime();
+
+    Chip8_Init(&game_state_data.chip8);
+    Chip8_SetGetKeysCallback(&game_state_data.chip8, GetKeys);
+
+    if (Chip8_LoadFromFile(&game_state_data.chip8, rom_path) < 0)
+    {
+        fprintf(stderr, "ERROR: Failed to load ROM (path: %s)\n", rom_path);
+        return -1;
+    }
+
+    printf("ROM loaded (program length: %d)\n", game_state_data.chip8.program_len);
+
+    game_state_data.pixels = malloc(sizeof(Color) * DISPLAY_WIDTH * DISPLAY_HEIGHT);
+    memset(game_state_data.pixels, 0, sizeof(Color) * DISPLAY_WIDTH * DISPLAY_HEIGHT);
+
+    game_state_data.display_render_texture = LoadRenderTexture(DISPLAY_WIDTH, DISPLAY_HEIGHT);
 
     return 0;
+}
+
+static void DeinitGameState(void)
+{
+    UnloadRenderTexture(game_state_data.display_render_texture);
+    free(game_state_data.pixels);
+}
+
+static void UpdateGameState(void)
+{
+    if (rom_picker_enabled && IsKeyPressed(KEY_BACKSPACE))
+    {
+        ChangeState(STATE_ROM_SELECTION, NULL);
+        return;
+    }
+
+    if (IsKeyPressed(KEY_ENTER))
+    {
+        // reset the ROM
+        Chip8_Reset(&game_state_data.chip8);
+    }
+
+    double dt_secs = GetTime() - game_state_data.last_time;
+    game_state_data.last_time = GetTime();
+    game_state_data.time_acc += dt_secs;
+
+    while (game_state_data.time_acc >= CPU_TICK_SECS)
+    {
+        if (!Chip8_Tick(&game_state_data.chip8))
+        {
+            break;
+        }
+
+        game_state_data.time_acc -= CPU_TICK_SECS;
+    }
+
+    if (game_state_data.chip8.st)
+    {
+        // TODO: play sound
+    }
+
+    UpdateScreen(&game_state_data.chip8, game_state_data.display_render_texture, game_state_data.pixels); 
+    UpdateKeys();
+
+    BeginDrawing();
+    ClearBackground(RAYWHITE);
+    DrawGameScreen(game_state_data.display_render_texture); 
+    DrawHUD();
+    EndDrawing();
+}
+
+static int InitRomSelectionState(void *data)
+{
+    (void)data;
+
+    return 0;
+}
+
+static void DeinitRomSelectionState(void) {}
+
+static void UpdateRomSelectionState(void)
+{
+    if (IsKeyPressed(KEY_DOWN))
+    {
+        RomPicker_Down(&rom_selection_data.picker);
+    }
+
+    if (IsKeyPressed(KEY_UP))
+    {
+        RomPicker_Up(&rom_selection_data.picker);
+    }
+
+    if (IsKeyPressed(KEY_SPACE) || IsKeyPressed(KEY_ENTER))
+    {
+        char rom_path[ROM_PATH_MAX_LEN];
+
+        RomPicker_GetSelectedPath(&rom_selection_data.picker, rom_path);
+        ChangeState(STATE_GAME, rom_path);
+    }
+
+    BeginDrawing();
+    ClearBackground(RAYWHITE);
+
+    // draw cursor
+
+    int y = rom_selection_data.picker.cursor * ROM_PICKER_FONT_SIZE;
+
+    DrawRectangle(0, y, SCREEN_WIDTH, ROM_PICKER_FONT_SIZE, BLACK);
+
+    // draw rom list
+
+    for (unsigned int i = 0; i < rom_selection_data.picker.rom_count; i++)
+    {
+        char *rom = rom_selection_data.picker.roms[i];
+        int rom_text_width = MeasureText(rom, ROM_PICKER_FONT_SIZE);
+        Color color = i == rom_selection_data.picker.cursor ? WHITE : BLACK;
+
+        DrawText(rom, SCREEN_WIDTH / 2 - rom_text_width / 2, ROM_PICKER_FONT_SIZE * i, ROM_PICKER_FONT_SIZE, color);
+    }
+
+    EndDrawing();
 }
 
 static void DrawGameScreen(RenderTexture2D display_render_texture)

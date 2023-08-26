@@ -8,7 +8,7 @@ add_compile_options(-Wall -Wextra -Wpedantic -Wno-gnu-binary-literal)
 
 add_executable(disassembler disassembler.c chip-8.c)
 add_executable(tests tests.c chip-8.c)
-add_executable(emulator emulator.c chip-8.c)
+add_executable(emulator emulator.c chip-8.c rom_picker.c)
 
 add_test(NAME tests COMMAND tests)
 

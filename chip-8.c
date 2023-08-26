@@ -112,6 +112,20 @@ void Chip8_Init(Chip8 *chip8)
     chip8->instruction_handlers[CLS] = ClsHandler;
 }
 
+void Chip8_Reset(Chip8 *chip8)
+{
+    memset(chip8->v, 0, sizeof(chip8->v));
+    memset(chip8->stack, 0, sizeof(chip8->stack));
+    memset(chip8->display, 0, sizeof(chip8->display));
+
+    chip8->dt = 0;
+    chip8->st = 0;
+    chip8->i = 0;
+    chip8->pc = PROGRAM_START_ADDR;
+    chip8->sp = 0;
+    chip8->time_acc = 0;
+}
+
 int Chip8_Load(Chip8 *chip8, uint8_t *data, unsigned int len)
 {
     if (len > RAM_SIZE - PROGRAM_START_ADDR)
