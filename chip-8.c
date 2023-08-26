@@ -744,14 +744,23 @@ static uint16_t LdVxDtHandler(Chip8 *chip8, uint16_t instruction)
 
 static uint16_t LdVxKHandler(Chip8 *chip8, uint16_t instruction)
 {
-    (void)instruction;
-
+    uint8_t reg_x;
     uint16_t keys = chip8->get_keys();
+
+    GetInstructionRegisters(instruction, &reg_x, NULL);
 
     // don't advance the PC until a key is pressed
     if (keys > 0)
     {
-        // TODO: store the key in Vx
+        for (int k = 0; k <= 0xF; k++)
+        {
+            if (keys & KEY_MASK(k))
+            {
+                chip8->v[reg_x] = k;
+                break;
+            }
+        }
+
         return 2;
     }
 
