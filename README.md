@@ -2,14 +2,23 @@
 
 A Chip-8 emulator written in C with raylib.
 
-## Building and running
+## Building
 
 ```
 cmake -DRAYLIB_LIBRARY_PATH=<PATH TO RAYLIB LIBRARY FILE> -DRAYLIB_INCLUDE_PATH=<PATH TO RAYLIB HEADER>
 make
 ctest # run unit tests
-./emulator ROM_PATH # run the specified ROM
 ```
+
+If you want to use the built in ROM picker, you need to provide a path to a directory containing your Chip-8 roms to the cmake command:
+
+`-DROMS_DIR=<PATH TO ROMS DIR>`
+
+## Running
+
+`./emulator [ROM_PATH]`
+
+If `ROM_PATH` is provided, the emulator will run the specified ROM, otherwise it will let you pick a ROM from the provided directory (see Building section).
 
 ## Test ROMS and resources
 

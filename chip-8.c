@@ -5,7 +5,6 @@
 #include <assert.h>
 
 #include "chip-8.h"
-#include "util.h"
 
 #define ADDR(instr) (instr & 0xFFF)
 #define NIBBLE(instr) (instr & 0xF)

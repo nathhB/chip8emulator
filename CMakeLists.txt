@@ -23,3 +23,16 @@ endif()
 if (APPLE)
     target_link_libraries(emulator "-framework OpenGL -framework Cocoa -framework IOKit -framework CoreAudio -framework CoreVideo")
 endif (APPLE)
+
+if (EMSCRIPTEN)
+    set_target_properties(emulator PROPERTIES LINK_FLAGS "-s USE_GLFW=3 \
+    --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/shell.html \
+    -s ASYNCIFY \
+    -s ALLOW_MEMORY_GROWTH=1 \
+    --preload-file ${ROMS_DIR}@roms")
+
+    set_target_properties(emulator PROPERTIES SUFFIX ".html")
+    add_compile_definitions(ROMS_DIR_PATH="roms")
+else ()
+    add_compile_definitions(ROMS_DIR_PATH="${ROMS_DIR}")
+endif (EMSCRIPTEN)

@@ -123,6 +123,7 @@ int main(int argc, char **argv)
     return 0;
 
 error:
+    fprintf(stderr, "Something went wrong!\n");
     CloseWindow();
     return 1; 
 }
@@ -259,6 +260,7 @@ static void UpdateRomSelectionState(void)
         DrawText(rom, SCREEN_WIDTH / 2 - rom_text_width / 2, ROM_PICKER_FONT_SIZE * i, ROM_PICKER_FONT_SIZE, color);
     }
 
+    DrawHUD();
     EndDrawing();
 }
 

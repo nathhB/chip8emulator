@@ -4,7 +4,6 @@
 #define MAX_ROMS 16
 #define ROM_PATH_MAX_LEN 255
 #define ROM_NAME_MAX_LEN 25
-#define ROMS_DIR_PATH "../roms/c8games"
 
 typedef struct RomPicker
 {
