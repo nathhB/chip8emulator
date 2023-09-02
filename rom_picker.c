@@ -49,3 +49,8 @@ void RomPicker_GetSelectedPath(RomPicker *picker, char rom_path[ROM_PATH_MAX_LEN
 
     snprintf(rom_path, ROM_PATH_MAX_LEN, "%s/%s", picker->roms_path, selected_rom);
 }
+
+const char *RomPicker_GetSelectedRomName(RomPicker *picker)
+{
+    return picker->roms[picker->cursor];
+}

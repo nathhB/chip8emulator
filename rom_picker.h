@@ -17,5 +17,6 @@ void RomPicker_Init(RomPicker *picker, const char *roms_path);
 void RomPicker_Up(RomPicker *picker);
 void RomPicker_Down(RomPicker *picker);
 void RomPicker_GetSelectedPath(RomPicker *picker, char rom_path[ROM_PATH_MAX_LEN]);
+const char *RomPicker_GetSelectedRomName(RomPicker *picker);
 
 #endif // ROM_PICKER_H

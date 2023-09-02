@@ -8,10 +8,12 @@
 
 #define GAME_WIDTH 640
 #define GAME_HEIGHT 320
-#define HUD_HEIGHT 30
+#define HUD_TOP_HEIGHT 25
+#define HUD_BOTTOM_HEIGHT 30
 #define SCREEN_WIDTH GAME_WIDTH
-#define SCREEN_HEIGHT (GAME_HEIGHT + HUD_HEIGHT)
+#define SCREEN_HEIGHT (GAME_HEIGHT + HUD_TOP_HEIGHT + HUD_BOTTOM_HEIGHT)
 #define ROM_PICKER_FONT_SIZE 20
+#define HUD_FONT_SIZE 15
 
 typedef enum EmulatorStateType
 {
@@ -21,6 +23,7 @@ typedef enum EmulatorStateType
 
 typedef struct EmulatorState
 {
+    EmulatorStateType type;
     int (*init)(void *);
     void (*deinit)(void);
     void (*update)(void);
@@ -54,8 +57,8 @@ static void DeinitRomSelectionState(void);
 static void UpdateRomSelectionState(void);
 
 static EmulatorState states[2] = {
-    (EmulatorState){InitRomSelectionState, DeinitRomSelectionState, UpdateRomSelectionState},
-    (EmulatorState){InitGameState, DeinitGameState, UpdateGameState},
+    (EmulatorState){STATE_ROM_SELECTION, InitRomSelectionState, DeinitRomSelectionState, UpdateRomSelectionState},
+    (EmulatorState){STATE_GAME, InitGameState, DeinitGameState, UpdateGameState},
 };
 
 static RomSelectionData rom_selection_data;
@@ -245,7 +248,7 @@ static void UpdateRomSelectionState(void)
 
     // draw cursor
 
-    int y = rom_selection_data.picker.cursor * ROM_PICKER_FONT_SIZE;
+    int y = HUD_TOP_HEIGHT + (rom_selection_data.picker.cursor * ROM_PICKER_FONT_SIZE);
 
     DrawRectangle(0, y, SCREEN_WIDTH, ROM_PICKER_FONT_SIZE, BLACK);
 
@@ -257,7 +260,7 @@ static void UpdateRomSelectionState(void)
         int rom_text_width = MeasureText(rom, ROM_PICKER_FONT_SIZE);
         Color color = i == rom_selection_data.picker.cursor ? WHITE : BLACK;
 
-        DrawText(rom, SCREEN_WIDTH / 2 - rom_text_width / 2, ROM_PICKER_FONT_SIZE * i, ROM_PICKER_FONT_SIZE, color);
+        DrawText(rom, SCREEN_WIDTH / 2 - rom_text_width / 2, HUD_TOP_HEIGHT + ROM_PICKER_FONT_SIZE * i, ROM_PICKER_FONT_SIZE, color);
     }
 
     DrawHUD();
@@ -269,7 +272,7 @@ static void DrawGameScreen(RenderTexture2D display_render_texture)
     DrawTexturePro(
             display_render_texture.texture,
             (Rectangle){0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT},
-            (Rectangle){0, 0, GAME_WIDTH, GAME_HEIGHT},
+            (Rectangle){0, HUD_TOP_HEIGHT, GAME_WIDTH, GAME_HEIGHT},
             (Vector2){0, 0},
             0,
             WHITE);
@@ -277,7 +280,21 @@ static void DrawGameScreen(RenderTexture2D display_render_texture)
 
 static void DrawHUD(void)
 {
-    DrawText(TextFormat("Frequency: %.1f", CPU_FREQUENCY), 10, GAME_HEIGHT + 8, 15, BLACK);
+    const char *text;
+
+    if (current_state->type == STATE_ROM_SELECTION)
+    {
+        text = "Select ROM (Up/Down + ENTER)";
+    }
+    else if (current_state->type == STATE_GAME)
+    {
+        text = RomPicker_GetSelectedRomName(&rom_selection_data.picker);
+    }
+
+    int text_w = MeasureText(text, HUD_FONT_SIZE);
+
+    DrawText(text, SCREEN_WIDTH / 2 - text_w / 2, 5, HUD_FONT_SIZE, BLACK);
+    DrawText(TextFormat("Frequency: %.1f", CPU_FREQUENCY), 10, SCREEN_HEIGHT - 18, HUD_FONT_SIZE, BLACK);
 }
 
 static void UpdateScreen(Chip8 *chip8, RenderTexture2D display_render_texture, void *pixels)
