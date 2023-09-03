@@ -2,6 +2,10 @@
 
 A Chip-8 emulator written in C with raylib.
 
+![chip-8](screenshots/chip8.png)
+![screen1](screenshots/screen1.png)
+![screen1](screenshots/screen2.png)
+
 ## Building
 
 ```
