@@ -2,7 +2,7 @@
 
 A Chip-8 emulator written in C with raylib.
 
-[Test it here](https://nath-biag.com/projects/emulator.html)
+[Test it here](https://nath-biag.com/projects/emulator.html) (see the Controls section below)
 
 ![chip-8](screenshots/chip8.png)
 ![screen1](screenshots/screen1.png)
