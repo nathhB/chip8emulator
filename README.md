@@ -2,10 +2,28 @@
 
 A Chip-8 emulator written in C with raylib.
 
+[Test it here](https://nath-biag.com/projects/emulator.html)
+
 ![chip-8](screenshots/chip8.png)
 ![screen1](screenshots/screen1.png)
 ![screen2](screenshots/screen2.png)
 ![screen3](screenshots/screen3.png)
+
+## Controls
+
+Chip-8 uses a 16 keys keyboard mapped as such:
+
+```
+1 2 3 4
+
+A Z E R
+
+Q S D F
+
+W X C V
+```
+
+Actual controls depend on the ROM itself.
 
 ## Building
 
