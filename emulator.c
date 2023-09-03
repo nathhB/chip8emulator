@@ -9,7 +9,7 @@
 #define GAME_WIDTH 640
 #define GAME_HEIGHT 320
 #define HUD_TOP_HEIGHT 25
-#define HUD_BOTTOM_HEIGHT 30
+#define HUD_BOTTOM_HEIGHT 25
 #define SCREEN_WIDTH GAME_WIDTH
 #define SCREEN_HEIGHT (GAME_HEIGHT + HUD_TOP_HEIGHT + HUD_BOTTOM_HEIGHT)
 #define ROM_PICKER_FONT_SIZE 20
@@ -43,6 +43,11 @@ typedef struct RomSelectionData
     RomPicker picker;
 } RomSelectionData;
 
+typedef struct EmulatorSkin
+{
+    Color colors[4];
+} EmulatorSkin;
+
 static int ChangeState(EmulatorStateType new_state_type, void *data);
 static void DrawGameScreen(RenderTexture2D display_render_texture);
 static void DrawHUD(void);
@@ -59,6 +64,15 @@ static void UpdateRomSelectionState(void);
 static EmulatorState states[2] = {
     (EmulatorState){STATE_ROM_SELECTION, InitRomSelectionState, DeinitRomSelectionState, UpdateRomSelectionState},
     (EmulatorState){STATE_GAME, InitGameState, DeinitGameState, UpdateGameState},
+};
+
+static EmulatorSkin skin = {
+    .colors = {
+        (Color){64, 60, 52, 255},
+        (Color){140, 122, 105, 255},
+        (Color){217, 199, 184, 255},
+        (Color){13, 0, 0, 255}
+    }
 };
 
 static RomSelectionData rom_selection_data;
@@ -208,7 +222,7 @@ static void UpdateGameState(void)
     UpdateKeys();
 
     BeginDrawing();
-    ClearBackground(RAYWHITE);
+    ClearBackground(skin.colors[2]);
     DrawGameScreen(game_state_data.display_render_texture); 
     DrawHUD();
     EndDrawing();
@@ -244,13 +258,13 @@ static void UpdateRomSelectionState(void)
     }
 
     BeginDrawing();
-    ClearBackground(RAYWHITE);
+    ClearBackground(skin.colors[2]);
 
     // draw cursor
 
     int y = HUD_TOP_HEIGHT + (rom_selection_data.picker.cursor * ROM_PICKER_FONT_SIZE);
 
-    DrawRectangle(0, y, SCREEN_WIDTH, ROM_PICKER_FONT_SIZE, BLACK);
+    DrawRectangle(0, y, SCREEN_WIDTH, ROM_PICKER_FONT_SIZE, skin.colors[0]);
 
     // draw rom list
 
@@ -258,7 +272,7 @@ static void UpdateRomSelectionState(void)
     {
         char *rom = rom_selection_data.picker.roms[i];
         int rom_text_width = MeasureText(rom, ROM_PICKER_FONT_SIZE);
-        Color color = i == rom_selection_data.picker.cursor ? WHITE : BLACK;
+        Color color = i == rom_selection_data.picker.cursor ? skin.colors[2] : skin.colors[0];
 
         DrawText(rom, SCREEN_WIDTH / 2 - rom_text_width / 2, HUD_TOP_HEIGHT + ROM_PICKER_FONT_SIZE * i, ROM_PICKER_FONT_SIZE, color);
     }
@@ -293,15 +307,17 @@ static void DrawHUD(void)
 
     int text_w = MeasureText(text, HUD_FONT_SIZE);
 
-    DrawText(text, SCREEN_WIDTH / 2 - text_w / 2, 5, HUD_FONT_SIZE, BLACK);
-    DrawText(TextFormat("Frequency: %.1f", CPU_FREQUENCY), 10, SCREEN_HEIGHT - 18, HUD_FONT_SIZE, BLACK);
+    DrawRectangle(0, 0, SCREEN_WIDTH, HUD_TOP_HEIGHT, skin.colors[1]);
+    DrawRectangle(0, SCREEN_HEIGHT - HUD_BOTTOM_HEIGHT, SCREEN_WIDTH, HUD_BOTTOM_HEIGHT, skin.colors[1]);
+    DrawText(text, SCREEN_WIDTH / 2 - text_w / 2, 5, HUD_FONT_SIZE, skin.colors[2]);
+    DrawText(TextFormat("Frequency: %.1f", CPU_FREQUENCY), 10, SCREEN_HEIGHT - 18, HUD_FONT_SIZE, skin.colors[2]);
 }
 
 static void UpdateScreen(Chip8 *chip8, RenderTexture2D display_render_texture, void *pixels)
 {
     for (int i = 0; i < DISPLAY_WIDTH * DISPLAY_HEIGHT; i++)
     {
-        Color color = Chip8_GetPixel(chip8, i) ? BLACK : WHITE;
+        Color color = Chip8_GetPixel(chip8, i) ? skin.colors[3] : skin.colors[2];
 
         memcpy(pixels + (i * sizeof(Color)), &color, sizeof(Color));
     }
