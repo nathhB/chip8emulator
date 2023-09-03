@@ -4,7 +4,8 @@ A Chip-8 emulator written in C with raylib.
 
 ![chip-8](screenshots/chip8.png)
 ![screen1](screenshots/screen1.png)
-![screen1](screenshots/screen2.png)
+![screen2](screenshots/screen2.png)
+![screen3](screenshots/screen3.png)
 
 ## Building
 
@@ -17,6 +18,8 @@ ctest # run unit tests
 If you want to use the built in ROM picker, you need to provide a path to a directory containing your Chip-8 roms to the cmake command:
 
 `-DROMS_DIR=<PATH TO ROMS DIR>`
+
+The emulator can be compiled with emscripten to run in a web browser.
 
 ## Running
 
