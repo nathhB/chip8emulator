@@ -311,6 +311,14 @@ static void DrawHUD(void)
     DrawRectangle(0, SCREEN_HEIGHT - HUD_BOTTOM_HEIGHT, SCREEN_WIDTH, HUD_BOTTOM_HEIGHT, skin.colors[1]);
     DrawText(text, SCREEN_WIDTH / 2 - text_w / 2, 5, HUD_FONT_SIZE, skin.colors[2]);
     DrawText(TextFormat("Frequency: %.1f", CPU_FREQUENCY), 10, SCREEN_HEIGHT - 18, HUD_FONT_SIZE, skin.colors[2]);
+
+    if (current_state->type == STATE_GAME)
+    {
+        const char *back_text = "Backspace to return to ROM selection";
+        int back_text_w = MeasureText(back_text, HUD_FONT_SIZE);
+
+        DrawText(back_text, SCREEN_WIDTH - (back_text_w + 5), SCREEN_HEIGHT - 18, HUD_FONT_SIZE, skin.colors[2]);
+    }
 }
 
 static void UpdateScreen(Chip8 *chip8, RenderTexture2D display_render_texture, void *pixels)
